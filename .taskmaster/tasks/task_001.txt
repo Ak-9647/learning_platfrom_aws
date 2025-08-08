@@ -1,0 +1,11 @@
+# Task ID: 1
+# Title: Implement Configuration Manager
+# Status: pending
+# Dependencies: None
+# Priority: high
+# Description: Create a ConfigurationManager class that loads, validates, and provides typed access to environment variables required for the application.
+# Details:
+Implement ConfigurationManager.loadAndValidateConfig() method that validates all required environment variables from CURSOR.md §3. Create typed getter methods for each configuration value. The manager should fail fast with clear error messages when required variables are missing. Use a schema validation library like Joi or Zod for type checking. Include documentation of all required environment variables in the code.
+
+# Test Strategy:
+Write unit tests with ≥80% coverage that verify: 1) Validation fails appropriately with missing variables, 2) Typed getters return correct values, 3) Error messages are helpful and specific. Mock environment variables for testing.

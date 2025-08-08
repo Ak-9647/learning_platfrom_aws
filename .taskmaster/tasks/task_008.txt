@@ -1,0 +1,11 @@
+# Task ID: 8
+# Title: Implement PII Redaction Middleware
+# Status: pending
+# Dependencies: 1
+# Priority: high
+# Description: Create chat middleware that detects and redacts PII using AWS Comprehend or regex patterns.
+# Details:
+Implement middleware for chat functionality that scans messages for PII using AWS Comprehend PII detection service with regex fallback. The middleware should redact identified PII before storing or transmitting messages. Support configurable PII types for redaction. Ensure the redaction process is performant and doesn't significantly impact message delivery times.
+
+# Test Strategy:
+Write unit tests with a comprehensive set of PII examples (names, emails, phone numbers, addresses, SSNs, etc.) to verify detection and redaction. Test both Comprehend and regex fallback paths. Verify that no PII leaks into logs or storage. Measure performance impact on message processing.

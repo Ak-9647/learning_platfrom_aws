@@ -1,0 +1,11 @@
+# Task ID: 2
+# Title: Implement PowerPoint Parser
+# Status: pending
+# Dependencies: 1
+# Priority: high
+# Description: Create a PowerPointParserImpl class that can parse PPTX files into structured JSON format with image extraction.
+# Details:
+Implement PowerPointParserImpl using node-pptx or python-pptx via Lambda Layer. The parser should extract text content, slide structure, and embedded images. Images should be saved to S3 with deterministic keys based on document ID and slide number. The parser should handle various PowerPoint formats and versions. Include progress tracking for files >50MB.
+
+# Test Strategy:
+Test with a corpus of PPTX files including: standard presentations, image-heavy files, multilingual content, and corrupted files. Verify correct extraction of text, structure, and images. Ensure proper error handling for malformed files. Measure and optimize performance for large files.

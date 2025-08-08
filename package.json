@@ -1,0 +1,13 @@
+{
+  "name": "interactive-taskmaster",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "create:issues": "node scripts/create-github-issues.mjs",
+    "create:issues:dry": "DRY_RUN=1 node scripts/create-github-issues.mjs"
+  }
+}

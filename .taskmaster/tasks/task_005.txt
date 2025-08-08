@@ -1,0 +1,11 @@
+# Task ID: 5
+# Title: Implement Document Publishing API
+# Status: pending
+# Dependencies: 1, 4
+# Priority: medium
+# Description: Create POST /documents/{documentId}/publish endpoint with access controls and link management.
+# Details:
+Implement REST API endpoint that publishes a document and creates a shareable link. The endpoint should validate user permissions, handle link deactivation for previously published versions, and return a response with { shareableLink, publishedAt, accessSettings }. Implement proper access controls to ensure only authorized users can publish documents. The endpoint should be idempotent for repeated publish requests on the same document.
+
+# Test Strategy:
+Write unit and integration tests that verify: 1) Successful publishing with correct response format, 2) Access control enforcement, 3) Link deactivation for previous versions, 4) Idempotency for repeated requests. Test performance to ensure p50 ≤2s response time.

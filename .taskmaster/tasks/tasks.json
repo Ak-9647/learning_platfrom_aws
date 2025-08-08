@@ -1,0 +1,281 @@
+{
+  "master": {
+    "tasks": [
+      {
+        "id": 1,
+        "title": "Implement Configuration Manager",
+        "description": "Create a ConfigurationManager class that loads, validates, and provides typed access to environment variables required for the application.",
+        "details": "Implement ConfigurationManager.loadAndValidateConfig() method that validates all required environment variables from CURSOR.md §3. Create typed getter methods for each configuration value. The manager should fail fast with clear error messages when required variables are missing. Use a schema validation library like Joi or Zod for type checking. Include documentation of all required environment variables in the code.",
+        "testStrategy": "Write unit tests with ≥80% coverage that verify: 1) Validation fails appropriately with missing variables, 2) Typed getters return correct values, 3) Error messages are helpful and specific. Mock environment variables for testing.",
+        "priority": "high",
+        "dependencies": [],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 2,
+        "title": "Implement PowerPoint Parser",
+        "description": "Create a PowerPointParserImpl class that can parse PPTX files into structured JSON format with image extraction.",
+        "details": "Implement PowerPointParserImpl using node-pptx or python-pptx via Lambda Layer. The parser should extract text content, slide structure, and embedded images. Images should be saved to S3 with deterministic keys based on document ID and slide number. The parser should handle various PowerPoint formats and versions. Include progress tracking for files >50MB.",
+        "testStrategy": "Test with a corpus of PPTX files including: standard presentations, image-heavy files, multilingual content, and corrupted files. Verify correct extraction of text, structure, and images. Ensure proper error handling for malformed files. Measure and optimize performance for large files.",
+        "priority": "high",
+        "dependencies": [
+          1
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 3,
+        "title": "Implement PDF Parser",
+        "description": "Create a PDFParserImpl class that can parse PDF files into structured JSON with OCR fallback capability.",
+        "details": "Implement PDFParserImpl using pdf-parse/pdfjs with OCR fallback via AWS Textract for image-based PDFs. The parser should extract text content, document structure, and embedded images. Images should be saved to S3 with deterministic keys. Include progress tracking via WebSockets for files >50MB. Implement confidence scoring to trigger A2I (HITL) for low-confidence parsing results.",
+        "testStrategy": "Test with a corpus of PDF files including: text-based PDFs, image-based PDFs requiring OCR, multilingual content, and corrupted files. Verify correct extraction of text and images. Test OCR fallback path and confidence scoring. Measure and optimize performance for large files.",
+        "priority": "high",
+        "dependencies": [
+          1
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 4,
+        "title": "Implement Document Processing Orchestration",
+        "description": "Create a Step Functions workflow to orchestrate document processing with fast and robust processing paths.",
+        "details": "Implement AWS Step Functions workflow with two main branches: 1) Fast path for standard documents, 2) Robust path with OCR and HITL for complex documents. Include WebSocket integration for progress events on files >50MB. The workflow should persist parsed JSON and images to S3 with deterministic keys. Implement A2I (HITL) trigger on low confidence parsing results. Design the workflow to be resilient to failures with appropriate retry and error handling.",
+        "testStrategy": "Create integration tests that verify the entire processing pipeline with various document types. Test both fast and robust paths. Verify WebSocket progress events. Test error handling and recovery. Measure end-to-end processing times to ensure they meet performance targets (≤60s typical, ≤5min worst case).",
+        "priority": "high",
+        "dependencies": [
+          1,
+          2,
+          3
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 5,
+        "title": "Implement Document Publishing API",
+        "description": "Create POST /documents/{documentId}/publish endpoint with access controls and link management.",
+        "details": "Implement REST API endpoint that publishes a document and creates a shareable link. The endpoint should validate user permissions, handle link deactivation for previously published versions, and return a response with { shareableLink, publishedAt, accessSettings }. Implement proper access controls to ensure only authorized users can publish documents. The endpoint should be idempotent for repeated publish requests on the same document.",
+        "testStrategy": "Write unit and integration tests that verify: 1) Successful publishing with correct response format, 2) Access control enforcement, 3) Link deactivation for previous versions, 4) Idempotency for repeated requests. Test performance to ensure p50 ≤2s response time.",
+        "priority": "medium",
+        "dependencies": [
+          1,
+          4
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 6,
+        "title": "Implement Document Analytics API",
+        "description": "Create GET /documents/{documentId}/analytics endpoint backed by Athena for document usage analytics.",
+        "details": "Implement REST API endpoint that retrieves analytics data for a document. The endpoint should query Athena for analytics data stored in S3/Parquet format. Support date range filters and various analytics metrics as specified in the requirements. Implement caching for frequent queries to improve performance. Ensure proper access controls to restrict analytics to authorized users.",
+        "testStrategy": "Write unit and integration tests that verify: 1) Correct query construction and result parsing, 2) Date range filtering, 3) Access control enforcement, 4) Cache behavior, 5) Performance under load. Test performance to ensure p50 ≤2s response time.",
+        "priority": "medium",
+        "dependencies": [
+          1
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 7,
+        "title": "Implement Document Deletion API",
+        "description": "Create DELETE /documents/{documentId} endpoint for deep deletion of document resources.",
+        "details": "Implement REST API endpoint that performs deep deletion of a document and all associated resources. The endpoint should delete data from S3, vector databases, DynamoDB, and revoke any active sharing links. Make the endpoint idempotent to handle repeated deletion requests safely. Implement proper access controls to ensure only authorized users can delete documents.",
+        "testStrategy": "Write unit and integration tests that verify: 1) Complete deletion of all resources, 2) Link revocation, 3) Access control enforcement, 4) Idempotency for repeated requests. Test with various document states (draft, published, etc.) to ensure proper handling.",
+        "priority": "medium",
+        "dependencies": [
+          1,
+          5
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 8,
+        "title": "Implement PII Redaction Middleware",
+        "description": "Create chat middleware that detects and redacts PII using AWS Comprehend or regex patterns.",
+        "details": "Implement middleware for chat functionality that scans messages for PII using AWS Comprehend PII detection service with regex fallback. The middleware should redact identified PII before storing or transmitting messages. Support configurable PII types for redaction. Ensure the redaction process is performant and doesn't significantly impact message delivery times.",
+        "testStrategy": "Write unit tests with a comprehensive set of PII examples (names, emails, phone numbers, addresses, SSNs, etc.) to verify detection and redaction. Test both Comprehend and regex fallback paths. Verify that no PII leaks into logs or storage. Measure performance impact on message processing.",
+        "priority": "high",
+        "dependencies": [
+          1
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 9,
+        "title": "Implement Document Editor UI - Core Components",
+        "description": "Create React components for the document editor's core functionality including slide preview and navigation.",
+        "details": "Implement React components for the document editor with slide preview and navigation capabilities. The UI should support viewing and navigating through parsed document content. Implement autosave functionality with WebSocket sync for real-time collaboration. Ensure the UI meets WCAG 2.1 AA accessibility standards. Use React hooks for state management and consider using a UI component library that supports accessibility.",
+        "testStrategy": "Write unit tests for React components using Jest and React Testing Library. Test navigation, preview rendering, and autosave functionality. Perform accessibility testing using automated tools (e.g., axe-core) and manual testing with screen readers. Test WebSocket sync with multiple concurrent users.",
+        "priority": "high",
+        "dependencies": [
+          1,
+          4
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 10,
+        "title": "Implement Document Editor UI - Goal Setting and Checkpoints",
+        "description": "Create React components for setting learning goals with AI suggestions and marking checkpoints.",
+        "details": "Implement React components for goal setting with AI-generated suggestions and checkpoint marking. The UI should allow users to define learning goals, receive AI-generated suggestions, and mark checkpoints throughout the document. Persist goals and checkpoints to the backend and generate StructuredContent with embeddings for AI processing. Implement autosave functionality for goals and checkpoints.",
+        "testStrategy": "Write unit tests for React components using Jest and React Testing Library. Test goal setting, AI suggestions, checkpoint marking, and persistence. Test the generation of StructuredContent and embeddings. Verify autosave functionality and error handling.",
+        "priority": "medium",
+        "dependencies": [
+          9
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 11,
+        "title": "Implement Document Editor UI - Assessment and Publishing",
+        "description": "Create React components for assessment configuration and document publishing.",
+        "details": "Implement React components for assessment configuration and document publishing. The UI should allow users to configure assessments, preview the final document, and publish it with appropriate access settings. Integrate with the document publishing API. Implement validation to ensure all required elements are complete before publishing.",
+        "testStrategy": "Write unit tests for React components using Jest and React Testing Library. Test assessment configuration, validation, and publishing workflow. Test integration with the publishing API. Verify error handling and user feedback for validation issues.",
+        "priority": "medium",
+        "dependencies": [
+          5,
+          9,
+          10
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 12,
+        "title": "Implement Analytics Event Collection",
+        "description": "Create an event collection system that captures user interactions and writes them to Kinesis.",
+        "details": "Implement an event writer that captures user interactions and analytics events. Send events to Kinesis, which forwards to Firehose for storage in S3 as Parquet files. Define a comprehensive event schema that captures all required analytics data. Implement client-side and server-side event collection. Ensure events include necessary context and correlation IDs.",
+        "testStrategy": "Write unit tests for event collection, serialization, and transmission. Test integration with Kinesis and Firehose. Verify correct Parquet file generation in S3. Test with high event volumes to ensure performance and reliability. Verify event schema correctness and backward compatibility.",
+        "priority": "medium",
+        "dependencies": [
+          1
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 13,
+        "title": "Implement Analytics Dashboard",
+        "description": "Create a dashboard UI for displaying document analytics with filtering and export capabilities.",
+        "details": "Implement a React-based analytics dashboard that displays document usage metrics including completion rates, time spent, checkpoint performance, and FAQs/confusions. Support filtering by date range and other relevant dimensions. Implement export functionality for CSV and PDF formats. Connect the dashboard to the analytics API and implement real-time updates via WebSocket subscription.",
+        "testStrategy": "Write unit tests for dashboard components using Jest and React Testing Library. Test filtering, data visualization, and export functionality. Test WebSocket integration for real-time updates. Verify accessibility compliance with WCAG 2.1 AA standards. Test with various data volumes and scenarios.",
+        "priority": "medium",
+        "dependencies": [
+          6,
+          12
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 14,
+        "title": "Implement Security Enhancements",
+        "description": "Implement security best practices including secure cookies, CSRF/XSS protections, and input validation.",
+        "details": "Implement security enhancements across the application: 1) Configure httpOnly and SameSite cookies for authentication, 2) Implement CSRF token validation for state-changing operations, 3) Add XSS protections including Content-Security-Policy headers and output encoding, 4) Implement comprehensive input validation for all API endpoints. Follow OWASP security best practices throughout the implementation.",
+        "testStrategy": "Conduct security testing including: 1) Automated scanning with tools like OWASP ZAP, 2) Manual testing of authentication and authorization flows, 3) CSRF/XSS attack simulations, 4) Input validation testing with malicious payloads. Document and verify remediation of all identified vulnerabilities.",
+        "priority": "high",
+        "dependencies": [
+          1,
+          5,
+          6,
+          7
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 15,
+        "title": "Implement Performance Optimizations",
+        "description": "Optimize application performance through caching, provisioned concurrency, and efficient resource usage.",
+        "details": "Implement performance optimizations: 1) Configure provisioned concurrency for Lambda functions to reduce cold starts, 2) Implement caching using DAX for DynamoDB and ElastiCache for frequent queries, 3) Optimize database access patterns and queries, 4) Implement efficient resource loading and lazy loading in the UI. Monitor and tune performance to meet targets (Agent p50 ≤2s, parsing ≤60s typical).",
+        "testStrategy": "Conduct performance testing: 1) Load testing with realistic usage patterns, 2) Measure and verify response times against targets, 3) Test cache hit rates and effectiveness, 4) Verify provisioned concurrency behavior under load. Document performance metrics and optimizations.",
+        "priority": "medium",
+        "dependencies": [
+          4,
+          5,
+          6,
+          7,
+          9,
+          10,
+          11
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 16,
+        "title": "Implement Observability Framework",
+        "description": "Create a comprehensive observability solution with structured logging, metrics, and alerts.",
+        "details": "Implement an observability framework: 1) Structured logging with correlation IDs across all services, 2) CloudWatch metrics for key operations (DocumentProcessing, API, Auth, Agent, Websocket), 3) SNS alerts for critical errors and performance issues, 4) Typed error handling that maps to user-friendly responses. Ensure logs don't contain PII or sensitive information.",
+        "testStrategy": "Test the observability framework: 1) Verify log format and correlation ID propagation, 2) Test metric collection and dashboard visualization, 3) Simulate error conditions to verify alerts, 4) Verify PII exclusion from logs. Test the complete observability pipeline from error to alert.",
+        "priority": "medium",
+        "dependencies": [
+          1,
+          4,
+          5,
+          6,
+          7,
+          8
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 17,
+        "title": "Implement Data Migration Scripts",
+        "description": "Create scripts for migrating from mock data to real data with feature flag control.",
+        "details": "Implement data migration scripts that can move from mock data to real data. The scripts should be reversible to support rollback if needed. Implement feature flags to control the cutover from mock to real data. Include validation steps to ensure data integrity during migration. Design the migration to be non-disruptive to active users.",
+        "testStrategy": "Test migration scripts in staging environment with production-like data volumes. Verify data integrity before and after migration. Test rollback procedures. Measure migration performance and optimize for minimal downtime. Test feature flag behavior for controlling the cutover.",
+        "priority": "low",
+        "dependencies": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 18,
+        "title": "Implement CI/CD Pipeline and Production Readiness",
+        "description": "Create CI/CD pipeline with build, test, lint, and deployment stages, including DR and rollback procedures.",
+        "details": "Implement CI/CD pipeline with: 1) Build, test, lint, and deployment stages, 2) Manual approval gate for production deployment, 3) Blue-green deployment strategy for zero-downtime updates, 4) DR and rollback playbooks for emergency situations, 5) Tenancy validation and audits to ensure proper isolation. Document all operational procedures for the production environment.",
+        "testStrategy": "Test the CI/CD pipeline with various code changes including feature additions, bug fixes, and rollbacks. Verify build, test, and deployment processes. Conduct disaster recovery drills to validate DR procedures. Test blue-green deployment and rollback procedures in staging environment.",
+        "priority": "medium",
+        "dependencies": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          14,
+          15,
+          16,
+          17
+        ],
+        "status": "pending",
+        "subtasks": []
+      }
+    ],
+    "metadata": {
+      "created": "2025-08-08T21:50:19.487Z",
+      "updated": "2025-08-08T21:50:19.487Z",
+      "description": "Tasks for master context"
+    }
+  }
+}

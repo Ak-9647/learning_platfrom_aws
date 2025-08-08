@@ -1,0 +1,11 @@
+# Task ID: 7
+# Title: Implement Document Deletion API
+# Status: pending
+# Dependencies: 1, 5
+# Priority: medium
+# Description: Create DELETE /documents/{documentId} endpoint for deep deletion of document resources.
+# Details:
+Implement REST API endpoint that performs deep deletion of a document and all associated resources. The endpoint should delete data from S3, vector databases, DynamoDB, and revoke any active sharing links. Make the endpoint idempotent to handle repeated deletion requests safely. Implement proper access controls to ensure only authorized users can delete documents.
+
+# Test Strategy:
+Write unit and integration tests that verify: 1) Complete deletion of all resources, 2) Link revocation, 3) Access control enforcement, 4) Idempotency for repeated requests. Test with various document states (draft, published, etc.) to ensure proper handling.

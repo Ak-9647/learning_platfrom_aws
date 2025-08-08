@@ -1,0 +1,11 @@
+# Task ID: 4
+# Title: Implement Document Processing Orchestration
+# Status: pending
+# Dependencies: 1, 2, 3
+# Priority: high
+# Description: Create a Step Functions workflow to orchestrate document processing with fast and robust processing paths.
+# Details:
+Implement AWS Step Functions workflow with two main branches: 1) Fast path for standard documents, 2) Robust path with OCR and HITL for complex documents. Include WebSocket integration for progress events on files >50MB. The workflow should persist parsed JSON and images to S3 with deterministic keys. Implement A2I (HITL) trigger on low confidence parsing results. Design the workflow to be resilient to failures with appropriate retry and error handling.
+
+# Test Strategy:
+Create integration tests that verify the entire processing pipeline with various document types. Test both fast and robust paths. Verify WebSocket progress events. Test error handling and recovery. Measure end-to-end processing times to ensure they meet performance targets (≤60s typical, ≤5min worst case).

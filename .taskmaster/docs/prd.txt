@@ -1,0 +1,69 @@
+Title: Interactive Learning Platform – Cursor Integration Tasks
+
+Overview:
+Actionable breakdown derived from ARCHITECTURE.md, CURSOR.md, DESIGN.md, PRD.md, and consolidated in `.d`. Scope is to productionalize the integration with strict security, performance, and testing requirements.
+
+Goals:
+- Implement configuration, parsers, APIs, editor, analytics, security/privacy, observability.
+- Maintain stable contracts and testing coverage ≥80% on touched files.
+
+Priorities:
+P1-P3: Configuration Manager; Document Processing; API Coverage; PII Redaction; Document Editor.
+P4-P6: Real Analytics; Config/Security/Perf/Observability.
+P7-P10: Data Migration & Prod Readiness.
+
+Tasks:
+1) Configuration Manager
+- Implement ConfigurationManager.loadAndValidateConfig() with strict env var validation and typed getters.
+- Document required env vars from CURSOR.md §3.
+- Unit tests (≥80% coverage on touched files).
+
+2) Document Processing
+- PowerPointParserImpl (node-pptx or python-pptx via Lambda Layer).
+- PDFParserImpl (pdf-parse/pdfjs) with OCR fallback via Textract.
+- Step Functions: Fast vs Robust branch orchestration.
+- WebSocket progress events for files >50MB.
+- Persist parsed JSON and images to S3 with deterministic keys.
+- A2I (HITL) trigger on low confidence.
+- Unit and integration tests with corpora (PPTX, image-heavy PDF, multilingual, corrupted).
+
+3) API Coverage
+- POST /documents/{documentId}/publish with access controls + link deactivation; returns { shareableLink, publishedAt, accessSettings }.
+- GET /documents/{documentId}/analytics backed by Athena; date range filters.
+- DELETE /documents/{documentId} deep delete (S3/vectors/Dynamo), link revocation; idempotent.
+- Tests for all endpoints, proper error mapping, p50 ≤2s.
+
+4) PII Redaction
+- Chat middleware using Comprehend PII (or regex fallback).
+- Unit tests to ensure no PII leaks in logs/storage.
+
+5) Document Editor (React)
+- Panels: Slide preview, Goal setting (AI suggestions), Checkpoint marking, Assessment config, Publish.
+- Persist goals/checkpoints; generate StructuredContent + embeddings.
+- Autosave + WebSocket sync; WCAG 2.1 AA checks.
+
+6) Real Analytics
+- Event writer → Kinesis → Firehose → S3 (Parquet) → Athena DDL.
+- Realtime WebSocket subscription.
+- Dashboard: completion, time spent, checkpoint performance, FAQs/confusions; export CSV/PDF.
+
+7) Config/Security/Perf/Observability
+- Fail fast on missing config with helpful list.
+- httpOnly cookies; SameSite; CSRF/XSS mitigations.
+- Provisioned concurrency; caching (DAX/ElastiCache) where applicable.
+- Structured logging with correlation IDs; typed errors → user-friendly responses.
+- CloudWatch metrics + SNS alerts (DocumentProcessing, API, Auth, Agent, Websocket).
+
+8) Data Migration & Prod Readiness
+- Migrate mock → real with reversible scripts; feature-flag cutover.
+- DR and rollback playbooks; blue-green rollout.
+- Tenancy validation and audits.
+
+Constraints:
+- Adhere to stable interfaces in CURSOR.md §5; versioning with v2 types when needed and dual-read/dual-write.
+- Non-negotiables: Security, Privacy, Compliance, Performance targets as documented.
+
+Acceptance Criteria:
+- Tests: unit/integration/system/security/perf; coverage ≥80% on modified files.
+- Performance: Agent p50 ≤2s; parsing ≤60s typical; ≤5min worst for large files.
+- CI/CD: build/test/lint/deploy; manual gate to prod.

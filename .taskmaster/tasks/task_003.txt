@@ -1,0 +1,11 @@
+# Task ID: 3
+# Title: Implement PDF Parser
+# Status: pending
+# Dependencies: 1
+# Priority: high
+# Description: Create a PDFParserImpl class that can parse PDF files into structured JSON with OCR fallback capability.
+# Details:
+Implement PDFParserImpl using pdf-parse/pdfjs with OCR fallback via AWS Textract for image-based PDFs. The parser should extract text content, document structure, and embedded images. Images should be saved to S3 with deterministic keys. Include progress tracking via WebSockets for files >50MB. Implement confidence scoring to trigger A2I (HITL) for low-confidence parsing results.
+
+# Test Strategy:
+Test with a corpus of PDF files including: text-based PDFs, image-based PDFs requiring OCR, multilingual content, and corrupted files. Verify correct extraction of text and images. Test OCR fallback path and confidence scoring. Measure and optimize performance for large files.

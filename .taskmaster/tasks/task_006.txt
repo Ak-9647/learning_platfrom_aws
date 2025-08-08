@@ -1,0 +1,11 @@
+# Task ID: 6
+# Title: Implement Document Analytics API
+# Status: pending
+# Dependencies: 1
+# Priority: medium
+# Description: Create GET /documents/{documentId}/analytics endpoint backed by Athena for document usage analytics.
+# Details:
+Implement REST API endpoint that retrieves analytics data for a document. The endpoint should query Athena for analytics data stored in S3/Parquet format. Support date range filters and various analytics metrics as specified in the requirements. Implement caching for frequent queries to improve performance. Ensure proper access controls to restrict analytics to authorized users.
+
+# Test Strategy:
+Write unit and integration tests that verify: 1) Correct query construction and result parsing, 2) Date range filtering, 3) Access control enforcement, 4) Cache behavior, 5) Performance under load. Test performance to ensure p50 ≤2s response time.
