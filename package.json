@@ -10,6 +10,17 @@
     "create:issues": "node scripts/create-github-issues.mjs",
     "create:issues:dry": "DRY_RUN=1 node scripts/create-github-issues.mjs",
     "sync:issues": "node scripts/create-github-issues.mjs",
-    "sync:issues:dry": "DRY_RUN=1 node scripts/create-github-issues.mjs"
+    "sync:issues:dry": "DRY_RUN=1 node scripts/create-github-issues.mjs",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run --reporter=default",
+    "sync:tm": "node scripts/sync-issues-to-taskmaster.mjs"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.4",
+    "vitest": "^2.0.5",
+    "tsx": "^4.17.0"
+  },
+  "dependencies": {
+    "zod": "^3.23.8"
   }
 }
