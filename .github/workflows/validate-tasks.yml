@@ -1,0 +1,23 @@
+name: Validate TaskMaster Tasks
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.taskmaster/tasks/tasks.json'
+  push:
+    branches: [ main ]
+    paths:
+      - '.taskmaster/tasks/tasks.json'
+  workflow_dispatch: {}
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Validate tasks
+        run: node scripts/validate-tasks.mjs

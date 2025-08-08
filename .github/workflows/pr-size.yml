@@ -1,0 +1,43 @@
+name: Enforce PR Size
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  pr_size:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v4
+
+      - name: Compute net line changes
+        id: diff
+        run: |
+          set -e
+          base_sha="${{ github.event.pull_request.base.sha }}"
+          head_sha="${{ github.event.pull_request.head.sha }}"
+          git fetch --depth=2 origin $base_sha $head_sha || true
+          added=$(git diff --numstat $base_sha...$head_sha | awk '{a+=$1} END{print a+0}')
+          removed=$(git diff --numstat $base_sha...$head_sha | awk '{r+=$2} END{print r+0}')
+          net=$((added-removed))
+          echo "added=$added" >> $GITHUB_OUTPUT
+          echo "removed=$removed" >> $GITHUB_OUTPUT
+          echo "net=$net" >> $GITHUB_OUTPUT
+
+      - name: Fail if PR too large
+        if: ${{ steps.diff.outputs.net > 300 || steps.diff.outputs.added > 1000 }}
+        run: |
+          echo "PR too large: net=${{ steps.diff.outputs.net }} (added=${{ steps.diff.outputs.added }}, removed=${{ steps.diff.outputs.removed }}) exceeds policy (≤300 net, or >1000 added)." >&2
+          exit 1
+
+      - name: Comment size summary
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          header: pr-size
+          message: |
+            PR size summary:
+            - Added: ${{ steps.diff.outputs.added }}
+            - Removed: ${{ steps.diff.outputs.removed }}
+            - Net: ${{ steps.diff.outputs.net }}
+            Policy: ≤300 net lines (or will fail if >1000 added).
