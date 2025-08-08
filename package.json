@@ -8,6 +8,8 @@
   },
   "scripts": {
     "create:issues": "node scripts/create-github-issues.mjs",
-    "create:issues:dry": "DRY_RUN=1 node scripts/create-github-issues.mjs"
+    "create:issues:dry": "DRY_RUN=1 node scripts/create-github-issues.mjs",
+    "sync:issues": "node scripts/create-github-issues.mjs",
+    "sync:issues:dry": "DRY_RUN=1 node scripts/create-github-issues.mjs"
   }
 }

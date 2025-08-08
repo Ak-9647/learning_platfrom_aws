@@ -1,0 +1,30 @@
+name: Sync TaskMaster Issues
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - '.taskmaster/tasks/tasks.json'
+      - 'scripts/create-github-issues.mjs'
+  workflow_dispatch: {}
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Sync Issues
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: |
+          node -v
+          cat .taskmaster/tasks/tasks.json | head -n 5 || true
+          node scripts/create-github-issues.mjs

@@ -3,7 +3,7 @@ import path from 'path';
 import process from 'process';
 
 const token = process.env.GITHUB_TOKEN;
-const repoEnv = process.env.GITHUB_REPO;
+const repoEnv = process.env.GITHUB_REPO || process.env.GITHUB_REPOSITORY; // supports Actions default
 const repoArg = process.argv[2];
 const repoFull = repoEnv || repoArg;
 const dryRun = process.env.DRY_RUN === '1';
@@ -51,11 +51,11 @@ async function ensureLabel(name, color = '0ea5e9', description = '') {
   }
 }
 
-async function getOpenIssues() {
+async function getIssuesAllStates() {
   const issues = [];
   let page = 1;
   while (true) {
-    const batch = await gh(`/repos/${owner}/${repo}/issues?state=open&per_page=100&page=${page}`);
+    const batch = await gh(`/repos/${owner}/${repo}/issues?state=all&per_page=100&page=${page}`);
     if (!Array.isArray(batch) || batch.length === 0) break;
     issues.push(...batch.filter(i => !i.pull_request));
     page += 1;
@@ -75,6 +75,7 @@ function buildIssueBody(task, dependencyIssueNumbers = []) {
     '',
     `Priority: ${task.priority || 'medium'}`,
     `TaskMaster ID: ${task.id}`,
+    `Status: ${task.status || 'pending'}`,
     `Dependencies: ${depsLine}`,
   ];
   if (subtasks) {
@@ -84,19 +85,35 @@ function buildIssueBody(task, dependencyIssueNumbers = []) {
   return lines.join('\n');
 }
 
+function extractTasks(data) {
+  if (Array.isArray(data?.tasks)) return data.tasks;
+  const tagKeys = Object.keys(data || {});
+  for (const key of tagKeys) {
+    const maybeTasks = data[key]?.tasks;
+    if (Array.isArray(maybeTasks)) return maybeTasks;
+  }
+  return null;
+}
+
+function desiredLabelsForTask(task) {
+  const labels = new Set(['task-master', `priority: ${task.priority || 'medium'}`]);
+  return Array.from(labels);
+}
+
 async function main() {
   const tasksPath = path.resolve('.taskmaster/tasks/tasks.json');
   if (!fs.existsSync(tasksPath)) {
     console.error(`Tasks file not found at ${tasksPath}`);
     process.exit(1);
   }
-  const { tasks } = JSON.parse(fs.readFileSync(tasksPath, 'utf-8'));
+  const raw = JSON.parse(fs.readFileSync(tasksPath, 'utf-8'));
+  const tasks = extractTasks(raw);
   if (!Array.isArray(tasks)) {
     console.error('Invalid tasks.json format');
     process.exit(1);
   }
 
-  console.log(`Preparing to create/update ${tasks.length} issues in ${owner}/${repo} (dryRun=${dryRun})...`);
+  console.log(`Preparing to sync ${tasks.length} issues in ${owner}/${repo} (dryRun=${dryRun})...`);
 
   // Ensure labels
   const priorityColors = { high: 'ef4444', medium: 'f59e0b', low: '10b981' };
@@ -105,7 +122,7 @@ async function main() {
     await ensureLabel(`priority: ${p}`, priorityColors[p], `Priority ${p}`);
   }
 
-  const existing = await getOpenIssues();
+  const existing = await getIssuesAllStates();
   const existingByTitle = new Map(existing.map(i => [i.title, i]));
 
   const createdMap = new Map(); // taskId -> issueNumber
@@ -113,25 +130,48 @@ async function main() {
   // First pass: create or detect issues
   for (const task of tasks) {
     const title = `[TaskMaster #${task.id}] ${task.title}`;
-    const labels = ['task-master', `priority: ${task.priority || 'medium'}`];
-    let issue;
-    if (existingByTitle.has(title)) {
-      issue = existingByTitle.get(title);
-      createdMap.set(task.id, issue.number);
-      console.log(`Found existing issue #${issue.number} for task ${task.id}`);
-      continue;
+    const labels = desiredLabelsForTask(task);
+    let issue = existingByTitle.get(title);
+
+    if (!issue) {
+      const body = buildIssueBody(task);
+      if (dryRun) {
+        console.log(`DRY: Would create issue: ${title}`);
+      } else {
+        issue = await gh(`/repos/${owner}/${repo}/issues`, {
+          method: 'POST',
+          body: { title, body, labels }
+        });
+        console.log(`Created issue #${issue.number} for task ${task.id}`);
+      }
+    } else {
+      // Update title/body/labels if needed
+      if (!dryRun) {
+        const dependencyIssueNumbers = (task.dependencies || []) // will be refined in second pass too
+          .map(depId => createdMap.get(depId) || null)
+          .filter(Boolean);
+        const desiredBody = buildIssueBody(task, dependencyIssueNumbers);
+        const desiredState = task.status === 'done' ? 'closed' : 'open';
+        const currentLabels = new Set((issue.labels || []).map(l => (typeof l === 'string' ? l : l.name)));
+        const desired = new Set(labels);
+        const labelChanges = Array.from(desired).some(l => !currentLabels.has(l)) || Array.from(currentLabels).some(l => l.startsWith('priority: ') && !desired.has(l));
+        const patch = {};
+        if (issue.title !== title) patch.title = title;
+        if ((issue.body || '').trim() !== desiredBody.trim()) patch.body = desiredBody;
+        if (labelChanges) patch.labels = labels;
+        if (issue.state !== desiredState) patch.state = desiredState;
+        if (Object.keys(patch).length > 0) {
+          issue = await gh(`/repos/${owner}/${repo}/issues/${issue.number}`, { method: 'PATCH', body: patch });
+          console.log(`Updated issue #${issue.number} for task ${task.id}`);
+        } else {
+          console.log(`No changes for issue #${issue.number} (task ${task.id})`);
+        }
+      } else {
+        console.log(`DRY: Would update existing issue #${issue.number} for task ${task.id}`);
+      }
     }
-    const body = buildIssueBody(task);
-    if (dryRun) {
-      console.log(`DRY: Would create issue: ${title}`);
-      continue;
-    }
-    issue = await gh(`/repos/${owner}/${repo}/issues`, {
-      method: 'POST',
-      body: { title, body, labels }
-    });
-    createdMap.set(task.id, issue.number);
-    console.log(`Created issue #${issue.number} for task ${task.id}`);
+
+    if (issue) createdMap.set(task.id, issue.number);
   }
 
   if (dryRun) {
@@ -139,31 +179,35 @@ async function main() {
     return;
   }
 
-  // Second pass: update bodies with real dependency issue numbers
+  // Second pass: update bodies with real dependency issue numbers and enforce state
   for (const task of tasks) {
-    const issueNumber = createdMap.get(task.id);
-    if (!issueNumber) continue; // existed but not created in this run
+    const issueNumber = createdMap.get(task.id) || (existingByTitle.get(`[TaskMaster #${task.id}] ${task.title}`)?.number);
+    if (!issueNumber) continue;
 
     const dependencyIssueNumbers = (task.dependencies || [])
-      .map(depId => createdMap.get(depId))
+      .map(depId => createdMap.get(depId) || (existingByTitle.get(`[TaskMaster #${depId}] ${tasks.find(t => t.id === depId)?.title}`)?.number))
       .filter(Boolean);
 
-    // Fetch current body (could be existing issue)
     const current = await gh(`/repos/${owner}/${repo}/issues/${issueNumber}`);
-    const updatedBody = buildIssueBody(task, dependencyIssueNumbers);
+    const desiredBody = buildIssueBody(task, dependencyIssueNumbers);
+    const desiredState = task.status === 'done' ? 'closed' : 'open';
+    const desiredLabels = desiredLabelsForTask(task);
 
-    if (current.body && current.body.trim() === updatedBody.trim()) {
-      continue; // no change
+    const currentLabels = new Set((current.labels || []).map(l => (typeof l === 'string' ? l : l.name)));
+    const desired = new Set(desiredLabels);
+    const labelChanges = Array.from(desired).some(l => !currentLabels.has(l)) || Array.from(currentLabels).some(l => l.startsWith('priority: ') && !desired.has(l));
+
+    const patch = {};
+    if ((current.body || '').trim() !== desiredBody.trim()) patch.body = desiredBody;
+    if (current.state !== desiredState) patch.state = desiredState;
+    if (labelChanges) patch.labels = desiredLabels;
+    if (Object.keys(patch).length > 0) {
+      await gh(`/repos/${owner}/${repo}/issues/${issueNumber}`, { method: 'PATCH', body: patch });
+      console.log(`Synced issue #${issueNumber} dependencies/state/labels.`);
     }
-
-    await gh(`/repos/${owner}/${repo}/issues/${issueNumber}`, {
-      method: 'PATCH',
-      body: { body: updatedBody }
-    });
-    console.log(`Updated issue #${issueNumber} dependencies.`);
   }
 
-  console.log('Done.');
+  console.log('Sync complete.');
 }
 
 main().catch(err => {
