@@ -1,21 +1,31 @@
 import React, { useState } from 'react';
+import { useAutosave } from '../hooks/useAutosave';
 
 interface Props {
   slideCount: number;
   initialCheckpoints?: number[]; // slide numbers
   onChange?: (checkpoints: number[]) => void;
+  onSave?: (checkpoints: number[]) => Promise<void> | void;
 }
 
-export function CheckpointsPanel({ slideCount, initialCheckpoints = [], onChange }: Props) {
+export function CheckpointsPanel({ slideCount, initialCheckpoints = [], onChange, onSave }: Props) {
   const [selected, setSelected] = useState<Set<number>>(new Set(initialCheckpoints));
+
+  const emit = (next: Set<number>) => {
+    const arr = Array.from(next).sort((a, b) => a - b);
+    onChange?.(arr);
+    return arr;
+  };
 
   const toggle = (n: number) => {
     const next = new Set(selected);
     if (next.has(n)) next.delete(n);
     else next.add(n);
     setSelected(next);
-    onChange?.(Array.from(next).sort((a, b) => a - b));
+    emit(next);
   };
+
+  useAutosave({ value: Array.from(selected), delayMs: 400, onSave: onSave ?? (async () => {}) });
 
   return (
     <div aria-label="Checkpoints Panel">

@@ -1,18 +1,22 @@
 import React, { useState } from 'react';
+import { useAutosave } from '../hooks/useAutosave';
 
 interface Props {
   initialGoal?: string;
   suggestions?: string[];
   onChange?: (goal: string) => void;
+  onSave?: (goal: string) => Promise<void> | void;
 }
 
-export function GoalsPanel({ initialGoal = '', suggestions = [], onChange }: Props) {
+export function GoalsPanel({ initialGoal = '', suggestions = [], onChange, onSave }: Props) {
   const [goal, setGoal] = useState<string>(initialGoal);
 
   const update = (g: string) => {
     setGoal(g);
     onChange?.(g);
   };
+
+  useAutosave({ value: goal, delayMs: 400, onSave: onSave ?? (async () => {}) });
 
   return (
     <div aria-label="Goals Panel">
