@@ -15,14 +15,12 @@ export async function redactPII(text: string, options: RedactionOptions = {}): P
     try {
       const client = new ComprehendClient({ region });
       const res = await client.send(new DetectPiiEntitiesCommand({ Text: text, LanguageCode: 'en' }));
-      const entities = res.Entities || [];
-      // Replace detected spans with [REDACTED]
+      const entities = (res.Entities || []) as Array<{ BeginOffset?: number; EndOffset?: number }>;
       let redacted = text;
-      // Sort by begin offset descending to not disturb following indices
       entities
         .slice()
-        .sort((a, b) => (b.BeginOffset ?? 0) - (a.BeginOffset ?? 0))
-        .forEach((e) => {
+        .sort((a: any, b: any) => (b.BeginOffset ?? 0) - (a.BeginOffset ?? 0))
+        .forEach((e: any) => {
           const start = e.BeginOffset ?? 0;
           const end = e.EndOffset ?? start;
           redacted = redacted.slice(0, start) + '[REDACTED]' + redacted.slice(end);
@@ -33,7 +31,6 @@ export async function redactPII(text: string, options: RedactionOptions = {}): P
     }
   }
 
-  // Regex fallback
   let out = text;
   for (const rx of defaultRegexes) {
     out = out.replace(rx, '[REDACTED]');
