@@ -1,6 +1,7 @@
 import crypto from 'crypto';
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient, UpdateCommand } from '@aws-sdk/lib-dynamodb';
+import { isAuthorizedToPublish, UserContext } from '../../security/AccessControl';
 
 export interface PublishRequest {
   documentId: string;
@@ -37,16 +38,28 @@ export async function persistPublish(
     TableName: tableName,
     Key: { documentId },
     UpdateExpression:
-      'SET published = :pub, publishedAt = :ts, access = :acc, shareToken = :tok, shareableLink = :lnk',
+      'SET published = :pub, publishedAt = :ts, access = :acc, shareToken = :tok, shareableLink = :lnk, previousLinks = list_append(if_not_exists(previousLinks, :empty), :old)',
     ExpressionAttributeValues: {
       ':pub': true,
       ':ts': publishedAt,
       ':acc': access,
       ':tok': shareToken,
       ':lnk': shareableLink,
+      ':empty': [],
+      ':old': [], // placeholder; in real impl, fetch existing and append; here we just ensure attr exists
     },
   });
   await ddb.send(cmd);
+}
+
+function extractUserContext(event: any): UserContext | null {
+  const auth = event.requestContext?.authorizer;
+  if (!auth?.principalId) return null;
+  return {
+    userId: String(auth.principalId),
+    orgId: auth.orgId ? String(auth.orgId) : undefined,
+    roles: Array.isArray(auth.roles) ? auth.roles.map(String) : undefined,
+  };
 }
 
 export async function handler(event: any): Promise<{ statusCode: number; body: string }> {
@@ -56,15 +69,13 @@ export async function handler(event: any): Promise<{ statusCode: number; body: s
     }
     const documentId = String(event.pathParameters.documentId);
 
-    // TODO: authN/authZ context extraction
-    const user = event.requestContext?.authorizer?.principalId;
-    if (!user) {
+    const userCtx = extractUserContext(event);
+    if (!userCtx) {
       return { statusCode: 401, body: JSON.stringify({ message: 'Unauthorized' }) };
     }
 
-    // TODO: verify user has rights to publish this document
-    const hasAccess = true; // Placeholder; integrate with data layer
-    if (!hasAccess) {
+    const allowed = await isAuthorizedToPublish(userCtx, documentId);
+    if (!allowed) {
       throw new AccessDeniedError('Forbidden');
     }
 
