@@ -17,6 +17,7 @@ interface Props {
   wsUrl?: string;
   documentId?: string;
   apiBaseUrl?: string;
+  suggestApiUrl?: string;
 }
 
 export function DocumentEditor({
@@ -29,6 +30,7 @@ export function DocumentEditor({
   wsUrl,
   documentId,
   apiBaseUrl,
+  suggestApiUrl,
 }: Props) {
   const [current, setCurrent] = useState<number>(1);
   const [checkpoints, setCheckpoints] = useState<number[]>(initialCheckpoints || []);
@@ -81,6 +83,12 @@ export function DocumentEditor({
     wsRef.current?.send({ type: 'checkpoints_updated', payload: { checkpoints: cp } });
   };
 
+  const contentProvider = () => {
+    const titles = slides.map((s) => s.title).join(' ');
+    const bodies = slides.flatMap((s) => s.content).join(' ');
+    return `${titles} ${bodies}`.trim();
+  };
+
   return (
     <div aria-label="Document Editor" role="application" style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 16 }}>
       <div>
@@ -98,7 +106,14 @@ export function DocumentEditor({
         <SlidePreview slides={slides} current={current} />
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-        <GoalsPanel initialGoal={initialGoal} suggestions={goalSuggestions} onSave={onSavedGoal} textareaRef={goalRef} />
+        <GoalsPanel
+          initialGoal={initialGoal}
+          suggestions={goalSuggestions}
+          onSave={onSavedGoal}
+          textareaRef={goalRef}
+          suggestApiUrl={suggestApiUrl}
+          contentProvider={contentProvider}
+        />
         <CheckpointsPanel
           slideCount={slides.length || 1}
           initialCheckpoints={initialCheckpoints}
