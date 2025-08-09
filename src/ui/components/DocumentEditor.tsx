@@ -3,6 +3,8 @@ import type { Slide } from '../../parsers/DocumentTypes';
 import { SlidePreview } from './SlidePreview';
 import { GoalsPanel } from './GoalsPanel';
 import { CheckpointsPanel } from './CheckpointsPanel';
+import { AssessmentPanel } from './AssessmentPanel';
+import { PublishPanel } from './PublishPanel';
 import { WebSocketClient } from '../realtime/WebSocketClient';
 
 interface Props {
@@ -13,6 +15,8 @@ interface Props {
   onSaveGoal?: (goal: string) => Promise<void> | void;
   onSaveCheckpoints?: (checkpoints: number[]) => Promise<void> | void;
   wsUrl?: string;
+  documentId?: string;
+  apiBaseUrl?: string;
 }
 
 export function DocumentEditor({
@@ -23,6 +27,8 @@ export function DocumentEditor({
   onSaveGoal,
   onSaveCheckpoints,
   wsUrl,
+  documentId,
+  apiBaseUrl,
 }: Props) {
   const [current, setCurrent] = useState<number>(1);
   const [checkpoints, setCheckpoints] = useState<number[]>(initialCheckpoints || []);
@@ -98,6 +104,8 @@ export function DocumentEditor({
           initialCheckpoints={initialCheckpoints}
           onSave={onSavedCheckpoints}
         />
+        <AssessmentPanel />
+        {documentId && <PublishPanel documentId={documentId} apiBaseUrl={apiBaseUrl} />}
         <div aria-label="Shortcuts" role="note">
           <p>Shortcuts: ⌘/Ctrl+G focus Goals, ⌘/Ctrl+K toggle checkpoint for current slide.</p>
         </div>
