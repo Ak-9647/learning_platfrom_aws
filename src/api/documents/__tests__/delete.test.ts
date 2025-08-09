@@ -1,27 +1,35 @@
 import { describe, it, expect, vi } from 'vitest';
 import * as del from '../delete';
-import * as s3mod from '@aws-sdk/client-s3';
-import * as ddbmod from '@aws-sdk/lib-dynamodb';
 
-vi.spyOn(s3mod, 'S3Client').mockImplementation(() => ({
-  send: vi.fn(async (cmd: any) => {
-    const name = cmd.constructor.name;
-    if (name === 'ListObjectsV2Command') {
-      return { Contents: [{ Key: 'documents/doc-1/file.txt' }], IsTruncated: false } as any;
-    }
-    if (name === 'DeleteObjectsCommand') {
+vi.mock('@aws-sdk/client-s3', () => {
+  class MockS3Client {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    async send(cmd: any): Promise<any> {
+      const name = cmd?.constructor?.name;
+      if (name === 'ListObjectsV2Command') {
+        return { Contents: [{ Key: 'documents/doc-1/file.txt' }], IsTruncated: false } as any;
+      }
+      if (name === 'DeleteObjectsCommand') {
+        return {} as any;
+      }
       return {} as any;
     }
-    return {} as any;
-  }),
-}) as any);
+  }
+  class ListObjectsV2Command { constructor(public input: any) {} }
+  class DeleteObjectsCommand { constructor(public input: any) {} }
+  return { S3Client: MockS3Client, ListObjectsV2Command, DeleteObjectsCommand };
+});
 
-vi.spyOn(ddbmod, 'DynamoDBDocumentClient' as any).mockImplementation(() => ({
-  send: vi.fn(async (_cmd: any) => ({})),
-})) as any;
-
-// Patch from() to return our mocked client
-(ddbmod as any).DynamoDBDocumentClient.from = () => (ddbmod as any).DynamoDBDocumentClient();
+vi.mock('@aws-sdk/lib-dynamodb', () => {
+  class UpdateCommand { constructor(public input: any) {} }
+  class DeleteCommand { constructor(public input: any) {} }
+  class MockDocClient {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    async send(_cmd: any): Promise<any> { return {}; }
+    static from(): MockDocClient { return new MockDocClient(); }
+  }
+  return { DynamoDBDocumentClient: MockDocClient, UpdateCommand, DeleteCommand };
+});
 
 describe('delete handler', () => {
   it('requires auth', async () => {
