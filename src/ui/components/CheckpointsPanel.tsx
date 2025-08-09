@@ -28,14 +28,15 @@ export function CheckpointsPanel({ slideCount, initialCheckpoints = [], onChange
   useAutosave({ value: Array.from(selected), delayMs: 400, onSave: onSave ?? (async () => {}) });
 
   return (
-    <div aria-label="Checkpoints Panel">
-      <p>Critical Checkpoints</p>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(10, 1fr)', gap: 8 }}>
+    <section aria-label="Checkpoints Panel" role="region">
+      <p id="checkpoints-heading">Critical Checkpoints</p>
+      <div role="group" aria-labelledby="checkpoints-heading" style={{ display: 'grid', gridTemplateColumns: 'repeat(10, 1fr)', gap: 8 }}>
         {Array.from({ length: slideCount }, (_, i) => i + 1).map((n) => (
           <button
             key={n}
             type="button"
             aria-pressed={selected.has(n)}
+            aria-label={`Toggle checkpoint ${n}`}
             onClick={() => toggle(n)}
             style={{
               padding: '6px 8px',
@@ -49,6 +50,6 @@ export function CheckpointsPanel({ slideCount, initialCheckpoints = [], onChange
           </button>
         ))}
       </div>
-    </div>
+    </section>
   );
 }
