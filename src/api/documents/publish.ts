@@ -1,4 +1,6 @@
 import crypto from 'crypto';
+import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
+import { DynamoDBDocumentClient, UpdateCommand } from '@aws-sdk/lib-dynamodb';
 
 export interface PublishRequest {
   documentId: string;
@@ -20,6 +22,33 @@ function generateShareToken(documentId: string): string {
   return crypto.createHash('sha256').update(`${documentId}:${nonce}`).digest('hex').slice(0, 32);
 }
 
+export async function persistPublish(
+  tableName: string,
+  documentId: string,
+  shareToken: string,
+  publishedAt: string,
+  access: 'private' | 'org' | 'public',
+  shareableLink: string,
+  client?: DynamoDBDocumentClient
+): Promise<void> {
+  const ddb =
+    client || DynamoDBDocumentClient.from(new DynamoDBClient({ region: process.env.AWS_REGION || 'us-west-2' }));
+  const cmd = new UpdateCommand({
+    TableName: tableName,
+    Key: { documentId },
+    UpdateExpression:
+      'SET published = :pub, publishedAt = :ts, access = :acc, shareToken = :tok, shareableLink = :lnk',
+    ExpressionAttributeValues: {
+      ':pub': true,
+      ':ts': publishedAt,
+      ':acc': access,
+      ':tok': shareToken,
+      ':lnk': shareableLink,
+    },
+  });
+  await ddb.send(cmd);
+}
+
 export async function handler(event: any): Promise<{ statusCode: number; body: string }> {
   try {
     if (!event || !event.pathParameters || !event.pathParameters.documentId) {
@@ -34,7 +63,7 @@ export async function handler(event: any): Promise<{ statusCode: number; body: s
     }
 
     // TODO: verify user has rights to publish this document
-    const hasAccess = true; // Placeholder until integrated with data layer
+    const hasAccess = true; // Placeholder; integrate with data layer
     if (!hasAccess) {
       throw new AccessDeniedError('Forbidden');
     }
@@ -42,15 +71,20 @@ export async function handler(event: any): Promise<{ statusCode: number; body: s
     const body = typeof event.body === 'string' ? JSON.parse(event.body || '{}') : event.body || {};
     const access: 'private' | 'org' | 'public' = body.access || 'private';
 
-    // TODO: deactivate prior links and persist new publish state
     const token = generateShareToken(documentId);
     const urlBase = process.env.API_BASE_URL || 'https://example.com';
     const shareableLink = `${urlBase.replace(/\/$/, '')}/share/${documentId}/${token}`;
+    const publishedAt = new Date().toISOString();
+
+    const tableName = process.env.DOCUMENT_REGISTRY_TABLE;
+    if (tableName) {
+      await persistPublish(tableName, documentId, token, publishedAt, access, shareableLink);
+    }
 
     const response: PublishResponse = {
       shareableLink,
       documentId,
-      publishedAt: new Date().toISOString(),
+      publishedAt,
       accessSettings: access,
     };
 

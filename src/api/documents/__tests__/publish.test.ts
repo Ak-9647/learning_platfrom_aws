@@ -1,5 +1,6 @@
-import { describe, it, expect } from 'vitest';
-import { handler } from '../publish';
+import { describe, it, expect, vi } from 'vitest';
+import { handler, persistPublish } from '../publish';
+import { DynamoDBDocumentClient } from '@aws-sdk/lib-dynamodb';
 
 describe('publish handler', () => {
   it('returns 400 on missing documentId', async () => {
@@ -24,5 +25,19 @@ describe('publish handler', () => {
     expect(body.shareableLink).toMatch(/\/share\/doc-123\//);
     expect(body.accessSettings).toBe('org');
     expect(new Date(body.publishedAt).toString()).not.toBe('Invalid Date');
+  });
+});
+
+describe('persistPublish', () => {
+  it('calls UpdateCommand with expected values', async () => {
+    const sends: any[] = [];
+    const fakeClient = { send: vi.fn(async (cmd) => { sends.push(cmd); }) } as unknown as DynamoDBDocumentClient;
+    await persistPublish('tbl', 'doc-1', 'tok', '2020-01-01T00:00:00Z', 'private', 'https://x/y', fakeClient);
+    expect(sends.length).toBe(1);
+    const sent = sends[0].input;
+    expect(sent.TableName).toBe('tbl');
+    expect(sent.Key.documentId).toBe('doc-1');
+    expect(sent.ExpressionAttributeValues[':pub']).toBe(true);
+    expect(sent.ExpressionAttributeValues[':acc']).toBe('private');
   });
 });
