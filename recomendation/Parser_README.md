@@ -1,5 +1,9 @@
 # Parser Implementation Issues & Recommendations
 
+## Context
+
+This analysis covers the document parsing system in `/src/parsers/` which handles PDF and PowerPoint file processing for the Interactive Taskmaster application. The parsers extract text content, images, and metadata from uploaded documents to enable search, analytics, and content management features.
+
 ## Current Parser Problems
 
 The existing parsers in `/src/parsers/` have several critical issues that need addressing:

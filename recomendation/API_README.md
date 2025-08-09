@@ -1,5 +1,11 @@
 # API Implementation Issues & Recommendations
 
+## Context
+
+This analysis covers the REST API endpoints in `/src/api/documents/` that provide core document management functionality including analytics, publishing, and deletion operations. These APIs are deployed as AWS Lambda functions and serve both the web application and mobile clients.
+
+**🚨 CRITICAL SECURITY ALERT**: The delete API has a critical authorization bypass vulnerability that allows any authenticated user to delete any document in the system.
+
 ## Current API Problems
 
 The existing APIs in `/src/api/documents/` have several critical security and reliability issues:
