@@ -12,7 +12,7 @@
     "sync:issues": "node scripts/create-github-issues.mjs",
     "sync:issues:dry": "DRY_RUN=1 node scripts/create-github-issues.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "vitest run --environment=jsdom --setupFiles vitest.setup.ts --reporter=default",
+    "test": "vitest run --reporter=default",
     "sync:tm": "node scripts/sync-issues-to-taskmaster.mjs"
   },
   "devDependencies": {
