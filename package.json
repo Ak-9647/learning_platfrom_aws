@@ -12,7 +12,7 @@
     "sync:issues": "node scripts/create-github-issues.mjs",
     "sync:issues:dry": "DRY_RUN=1 node scripts/create-github-issues.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "vitest run --environment=jsdom --reporter=default",
+    "test": "vitest run --environment=jsdom --setupFiles vitest.setup.ts --reporter=default",
     "sync:tm": "node scripts/sync-issues-to-taskmaster.mjs"
   },
   "devDependencies": {
@@ -22,7 +22,8 @@
     "@testing-library/react": "^16.0.0",
     "@testing-library/jest-dom": "^6.4.8",
     "@types/react": "^18.3.3",
-    "@types/react-dom": "^18.3.0"
+    "@types/react-dom": "^18.3.0",
+    "jsdom": "^24.1.0"
   },
   "dependencies": {
     "zod": "^3.23.8",
